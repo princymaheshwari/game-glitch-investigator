@@ -1,25 +1,6 @@
 import random
 import streamlit as st
-from logic_utils import check_guess, reset_game, update_score, get_range_for_difficulty
-
-
-def parse_guess(raw: str):
-    if raw is None:
-        return False, None, "Enter a guess."
-
-    if raw == "":
-        return False, None, "Enter a guess."
-
-    try:
-        if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
-    except Exception:
-        return False, None, "That is not a number."
-
-    return True, value, None
-
+from logic_utils import check_guess, reset_game, update_score, get_range_for_difficulty, parse_guess
 
 
 
@@ -115,10 +96,15 @@ if submit:
     else:
         st.session_state.history.append(guess_int)
 
-        outcome, message = check_guess(guess_int, st.session_state.secret)
+        outcome = check_guess(guess_int, st.session_state.secret)
 
+        hint_messages = {
+            "Win": "🎉 Correct!",
+            "Too High": "📉 Go LOWER!",
+            "Too Low": "📈 Go HIGHER!",
+        }
         if show_hint:
-            st.warning(message)
+            st.warning(hint_messages[outcome])
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
