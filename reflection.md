@@ -75,7 +75,7 @@ I decided a bug was fixed when two things were both true: the game behaved corre
 
 For the score inconsistency bug, I ran `test_update_score_too_high_subtracts` which called `update_score(100, "Too High", 2)` — an even-numbered attempt, which was the exact case that was previously adding 5 points instead of subtracting. Before the fix this would have returned 105. After the fix it returned 95 and the test passed, which confirmed the even/odd branch was removed correctly.
 
-For the dead score line issue, after reverting Copilot's incorrect change I ran `test_update_score_win_attempt_1_gives_80` which asserts `update_score(0, "Win", 1) == 80`. This test failed when Copilot's version (`attempt_number - 1`) was in place — it returned 100 instead of 80 — which is what prompted me to check the git history and discover the suggestion was wrong.
+For the score formula issue, I ran `test_update_score_win_attempt_1_gives_100` which asserts `update_score(0, "Win", 1) == 100`. When I initially reverted Copilot's change back to `attempt_number + 1`, this test failed — it returned 80 instead of 100. That failure made me question which formula was actually correct, which led me to evaluate both manually and confirm that `attempt_number - 1` is the right logic (win on first try with no wrong guesses should give full 100 points).
 
 Copilot helped design the structure of the test file by suggesting one test per bug, targeting the exact input that exposed the broken behavior. For example, for the type coercion bug it suggested testing `check_guess(9, 50)` specifically because string comparison of `"9" > "50"` returns `True` alphabetically, which is the exact edge case that would silently give the wrong answer.
 
@@ -85,6 +85,10 @@ Copilot helped design the structure of the test file by suggesting one test per 
 
 - How would you explain Streamlit "reruns" and session state to a friend who has never used Streamlit?
 
+Every time you interact with a Streamlit app — click a button, type in a box, change a dropdown — Streamlit reruns the entire Python script from the very top. Think of it like refreshing a webpage, except the code runs again automatically. This means any normal variable you define in the script resets to its starting value on every interaction. `st.session_state` is a dictionary that survives these reruns — whatever you store in it stays there until you explicitly clear it or the browser tab closes. The bugs in this game were caused by not storing things in session state properly: attempts, score, status, and history were not all being reset together, so leftover values from a finished game blocked the next one from starting.
+
+The trickiest part was the rendering order. Streamlit renders widgets from top to bottom during each script run. The "Attempts left" info box was rendered at the top of the script, before the submit button logic ran — so it always showed the count from before the current guess was processed, not after. The fix was to call `st.rerun()` at the end of the submit block so the whole script re-renders fresh with the updated state, making the info box accurate on the very next render.
+
 ---
 
 ## 5. Looking ahead: your developer habits
@@ -93,3 +97,9 @@ Copilot helped design the structure of the test file by suggesting one test per 
   - This could be a testing habit, a prompting strategy, or a way you used Git.
 - What is one thing you would do differently next time you work with AI on a coding task?
 - In one or two sentences, describe how this project changed the way you think about AI generated code.
+
+The habit I want to keep is checking git history before accepting a bug diagnosis. When Copilot told me there were two lines overwriting each other, I nearly applied the fix without questioning it. 
+
+Next time I work with AI on a coding task, I would ask it to show its reasoning before I accept the conclusion — not just "fix this" but "explain why this is broken before you change anything." The dead score line bug slipped through because I accepted the diagnosis and only questioned the fix after noticing the test values changed. If I had asked Copilot to show me the two lines it was claiming existed, the fabrication would have been obvious immediately.
+
+This project changed how I think about AI-generated code by making it concrete that AI can be confidently wrong in ways that look completely plausible. The "dead code" bug was described with specific line numbers, a clear explanation, and a reasonable-sounding fix — none of which was true. AI output needs the same skepticism I would apply to code written by someone I have never worked with before: read it, verify the claims, and do not merge until you understand exactly what changed and why.
