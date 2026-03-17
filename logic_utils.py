@@ -42,9 +42,8 @@ def parse_guess(raw: str):
 
     try:
         if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
+            return False, None, "Please enter a whole number."
+        value = int(raw)
     except Exception:
         return False, None, "That is not a number."
 

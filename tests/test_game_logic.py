@@ -149,26 +149,29 @@ def test_check_guess_negative_is_always_too_low():
 
 
 # --- Edge case 2: Decimal inputs ---
-# A player typing "3.9" expects to guess 4, but int(float("3.9")) truncates to 3.
-# parse_guess should accept decimals and truncate toward zero, not round.
+# A player typing "3.9" could silently truncate to 3 and win if the secret is 3.
+# parse_guess must reject all decimal inputs so players cannot accidentally win with a wrong number.
 
-def test_parse_guess_decimal_truncates_not_rounds():
-    # "3.9" should become 3, not 4
-    ok, value, _ = parse_guess("3.9")
-    assert ok is True
-    assert value == 3
+def test_parse_guess_decimal_rejected():
+    # "3.9" must be rejected — truncating to 3 could give a false win
+    ok, value, err = parse_guess("3.9")
+    assert ok is False
+    assert value is None
+    assert err is not None
 
-def test_parse_guess_decimal_truncates_negative():
-    # "-3.9" should become -3, not -4
-    ok, value, _ = parse_guess("-3.9")
-    assert ok is True
-    assert value == -3
+def test_parse_guess_negative_decimal_rejected():
+    # "-3.9" must also be rejected
+    ok, value, err = parse_guess("-3.9")
+    assert ok is False
+    assert value is None
+    assert err is not None
 
-def test_parse_guess_whole_number_as_decimal():
-    # "5.0" should parse cleanly to 5
-    ok, value, _ = parse_guess("5.0")
-    assert ok is True
-    assert value == 5
+def test_parse_guess_whole_number_as_decimal_rejected():
+    # even "5.0" must be rejected — players must type 5, not 5.0
+    ok, value, err = parse_guess("5.0")
+    assert ok is False
+    assert value is None
+    assert err is not None
 
 
 # --- Edge case 3: Scientific notation and non-numeric strings ---
