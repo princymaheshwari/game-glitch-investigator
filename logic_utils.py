@@ -1,6 +1,20 @@
+import random
+
+
 def get_range_for_difficulty(difficulty: str):
     """Return (low, high) inclusive range for a given difficulty."""
     raise NotImplementedError("Refactor this function from app.py into logic_utils.py")
+
+
+def reset_game(low: int, high: int) -> dict:
+    """Return a fresh game state for a new game within the given range."""
+    return {
+        "secret": random.randint(low, high),
+        "attempts": 0,
+        "score": 0,
+        "status": "playing",
+        "history": [],
+    }
 
 
 def parse_guess(raw: str):
