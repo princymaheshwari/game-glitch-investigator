@@ -3,7 +3,6 @@ import streamlit as st
 from logic_utils import check_guess, reset_game, update_score, get_range_for_difficulty, parse_guess
 
 
-
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
 
 st.title("🎮 Game Glitch Investigator")
@@ -44,6 +43,27 @@ if "status" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+if "last_hint" not in st.session_state:
+    st.session_state.last_hint = None
+
+if "show_balloons" not in st.session_state:
+    st.session_state.show_balloons = False
+
+if "game_count" not in st.session_state:
+    st.session_state.game_count = 0
+
+if "difficulty" not in st.session_state:
+    st.session_state.difficulty = difficulty
+
+if st.session_state.difficulty != difficulty:
+    fresh = reset_game(low, high)
+    for key, value in fresh.items():
+        st.session_state[key] = value
+    st.session_state.difficulty = difficulty
+    st.session_state.last_hint = None
+    st.session_state.show_balloons = False
+    st.rerun()
+
 st.subheader("Make a guess")
 
 st.info(
@@ -60,7 +80,7 @@ with st.expander("Developer Debug Info"):
 
 raw_guess = st.text_input(
     "Enter your guess:",
-    key=f"guess_input_{difficulty}"
+    key=f"guess_input_{difficulty}_{st.session_state.game_count}"
 )
 
 col1, col2, col3 = st.columns(3)
@@ -69,30 +89,47 @@ with col1:
 with col2:
     new_game = st.button("New Game 🔁")
 with col3:
-    show_hint = st.checkbox("Show hint", value=True)
+    show_hint = st.checkbox("Show hint", value=True, key="show_hint_checkbox")
 
 if new_game:
     fresh = reset_game(low, high)
     for key, value in fresh.items():
         st.session_state[key] = value
-    st.success("New game started.")
+    st.session_state.game_count += 1
+    st.session_state.last_hint = None
+    st.session_state.show_balloons = False
     st.rerun()
 
-if st.session_state.status != "playing":
-    if st.session_state.status == "won":
-        st.success("You already won. Start a new game to play again.")
-    else:
-        st.error("Game over. Start a new game to try again.")
+if st.session_state.last_hint:
+    st.warning(st.session_state.last_hint)
+
+if st.session_state.status == "won":
+    if st.session_state.show_balloons:
+        st.balloons()
+        st.session_state.show_balloons = False
+    st.success(
+        f"You won! The secret was {st.session_state.secret}. "
+        f"Final score: {st.session_state.score}"
+    )
+    st.stop()
+
+if st.session_state.status == "lost":
+    st.error(
+        f"Out of attempts! "
+        f"The secret was {st.session_state.secret}. "
+        f"Score: {st.session_state.score}"
+    )
     st.stop()
 
 if submit:
+    st.session_state.last_hint = None
     st.session_state.attempts += 1
 
     ok, guess_int, err = parse_guess(raw_guess)
 
     if not ok:
         st.session_state.history.append(raw_guess)
-        st.error(err)
+        st.session_state.last_hint = err
     else:
         st.session_state.history.append(guess_int)
 
@@ -104,7 +141,7 @@ if submit:
             "Too Low": "📈 Go HIGHER!",
         }
         if show_hint:
-            st.warning(hint_messages[outcome])
+            st.session_state.last_hint = hint_messages[outcome]
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -113,20 +150,12 @@ if submit:
         )
 
         if outcome == "Win":
-            st.balloons()
             st.session_state.status = "won"
-            st.success(
-                f"You won! The secret was {st.session_state.secret}. "
-                f"Final score: {st.session_state.score}"
-            )
-        else:
-            if st.session_state.attempts >= attempt_limit:
-                st.session_state.status = "lost"
-                st.error(
-                    f"Out of attempts! "
-                    f"The secret was {st.session_state.secret}. "
-                    f"Score: {st.session_state.score}"
-                )
+            st.session_state.show_balloons = True
+        elif st.session_state.attempts >= attempt_limit:
+            st.session_state.status = "lost"
+
+    st.rerun()
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")
