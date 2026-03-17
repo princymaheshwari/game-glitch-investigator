@@ -1,16 +1,6 @@
 import random
 import streamlit as st
-from logic_utils import check_guess, reset_game, update_score
-
-def get_range_for_difficulty(difficulty: str):
-    if difficulty == "Easy":
-        return 1, 20
-    if difficulty == "Normal":
-        return 1, 100
-    # FIXME: Logic breaks here
-    if difficulty == "Hard":
-        return 1, 50
-    return 1, 100
+from logic_utils import check_guess, reset_game, update_score, get_range_for_difficulty
 
 
 def parse_guess(raw: str):
