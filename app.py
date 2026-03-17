@@ -93,8 +93,7 @@ if "history" not in st.session_state:
 st.subheader("Make a guess")
 
 st.info(
-    # FIXME: Logic breaks here
-    f"Guess a number between 1 and 100. "
+    f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
