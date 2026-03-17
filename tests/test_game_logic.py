@@ -1,4 +1,4 @@
-from logic_utils import check_guess, update_score, get_range_for_difficulty, reset_game
+from logic_utils import check_guess, update_score, get_range_for_difficulty, reset_game, parse_guess
 
 def test_winning_guess():
     # If the secret is 50 and guess is 50, it should be a win
@@ -129,3 +129,81 @@ def test_get_range_normal():
 def test_get_range_hard():
     low, high = get_range_for_difficulty("Hard")
     assert high > 100  # must exceed Normal's upper bound
+
+
+# --- Edge case 1: Negative numbers ---
+# A player typing "-5" gets a valid integer back, but it is outside every difficulty range.
+# parse_guess should accept it as a number (not an error), and check_guess should handle it correctly.
+
+def test_parse_guess_negative_number_is_accepted():
+    # "-5" is a valid integer — parse_guess should not reject it
+    ok, value, err = parse_guess("-5")
+    assert ok is True
+    assert value == -5
+    assert err is None
+
+def test_check_guess_negative_is_always_too_low():
+    # any negative guess is below any realistic secret
+    assert check_guess(-5, 1) == "Too Low"
+    assert check_guess(-100, 50) == "Too Low"
+
+
+# --- Edge case 2: Decimal inputs ---
+# A player typing "3.9" expects to guess 4, but int(float("3.9")) truncates to 3.
+# parse_guess should accept decimals and truncate toward zero, not round.
+
+def test_parse_guess_decimal_truncates_not_rounds():
+    # "3.9" should become 3, not 4
+    ok, value, _ = parse_guess("3.9")
+    assert ok is True
+    assert value == 3
+
+def test_parse_guess_decimal_truncates_negative():
+    # "-3.9" should become -3, not -4
+    ok, value, _ = parse_guess("-3.9")
+    assert ok is True
+    assert value == -3
+
+def test_parse_guess_whole_number_as_decimal():
+    # "5.0" should parse cleanly to 5
+    ok, value, _ = parse_guess("5.0")
+    assert ok is True
+    assert value == 5
+
+
+# --- Edge case 3: Scientific notation and non-numeric strings ---
+# "1e5" looks like a number but int() cannot parse it directly.
+# Strings like "abc" or " " should always return an error, never crash.
+
+def test_parse_guess_scientific_notation_rejected():
+    # "1e5" has no "." so it goes to int("1e5") which raises ValueError
+    ok, value, err = parse_guess("1e5")
+    assert ok is False
+    assert value is None
+    assert err is not None
+
+def test_parse_guess_letters_rejected():
+    ok, value, _ = parse_guess("abc")
+    assert ok is False
+    assert value is None
+
+def test_parse_guess_whitespace_rejected():
+    ok, value, _ = parse_guess("   ")
+    assert ok is False
+    assert value is None
+
+def test_parse_guess_empty_string_rejected():
+    ok, value, _ = parse_guess("")
+    assert ok is False
+    assert value is None
+
+def test_parse_guess_none_rejected():
+    ok, value, _ = parse_guess(None)
+    assert ok is False
+    assert value is None
+
+def test_parse_guess_extremely_large_number():
+    # very large numbers should parse without crashing
+    ok, value, _ = parse_guess("999999999")
+    assert ok is True
+    assert value == 999999999
