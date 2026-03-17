@@ -1,5 +1,6 @@
 import random
 import streamlit as st
+# FIX: All game logic functions moved out of app.py into logic_utils.py using Copilot Agent mode
 from logic_utils import check_guess, reset_game, update_score, get_range_for_difficulty, parse_guess
 
 
@@ -31,6 +32,7 @@ st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
 if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
+# FIX: Changed from 1 to 0 so players get their full attempt count using Copilot Agent mode
 if "attempts" not in st.session_state:
     st.session_state.attempts = 0
 
@@ -49,12 +51,14 @@ if "last_hint" not in st.session_state:
 if "show_balloons" not in st.session_state:
     st.session_state.show_balloons = False
 
+# FIX: game_count in the input key forces a fresh empty widget on new game without modifying widget state directly using Copilot Agent mode
 if "game_count" not in st.session_state:
     st.session_state.game_count = 0
 
 if "difficulty" not in st.session_state:
     st.session_state.difficulty = difficulty
 
+# FIX: Detects difficulty change and resets game so secret is always within the selected difficulty range using Copilot Agent mode
 if st.session_state.difficulty != difficulty:
     fresh = reset_game(low, high)
     for key, value in fresh.items():
@@ -66,6 +70,7 @@ if st.session_state.difficulty != difficulty:
 
 st.subheader("Make a guess")
 
+# FIX: Replaced hardcoded "1 and 100" with {low} and {high} to show correct range per difficulty using Copilot Agent mode
 st.info(
     f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
@@ -91,6 +96,7 @@ with col2:
 with col3:
     show_hint = st.checkbox("Show hint", value=True, key="show_hint_checkbox")
 
+# FIX: New game now resets all state (status, score, history) not just attempts and secret using Copilot Agent mode
 if new_game:
     fresh = reset_game(low, high)
     for key, value in fresh.items():
@@ -121,6 +127,7 @@ if st.session_state.status == "lost":
     )
     st.stop()
 
+# FIX: Submit stores hint in session state and calls st.rerun() so info box and debug always show updated state using Copilot Agent mode
 if submit:
     st.session_state.last_hint = None
     st.session_state.attempts += 1
